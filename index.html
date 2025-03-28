@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tresor AI Chat - Login</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>Tresor AI Chat</h1>
+        <div class="tab-container">
+          <button class="tab-btn active" data-tab="login">Login</button>
+          <button class="tab-btn" data-tab="signup">Sign Up</button>
+        </div>
+      </div>
+      
+      <div class="auth-form-container">
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form active">
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" required>
+          </div>
+          <button type="submit" class="btn-primary">Login</button>
+          <div class="divider">
+            <span>or</span>
+          </div>
+          <div id="g_id_onload"
+               data-client_id="253632040873-cp48it6euj8lf6jv7vv1p49r5j40dvh0.apps.googleusercontent.com"
+               data-context="signin"
+               data-ux_mode="popup"
+               data-auto_prompt="false"
+               data-callback="handleGoogleLogin">
+          </div>
+          <div class="g_id_signin" 
+               data-type="standard"
+               data-shape="rectangular"
+               data-theme="outline"
+               data-text="signin_with"
+               data-size="large"
+               data-logo_alignment="left">
+          </div>
+        </form>
+        
+        <!-- Signup Form -->
+        <form id="signup-form" class="auth-form">
+          <div class="form-group">
+            <label for="signup-name">Full Name</label>
+            <input type="text" id="signup-name" required>
+          </div>
+          <div class="form-group">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" required>
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" required>
+          </div>
+          <div class="form-group">
+            <label for="signup-confirm-password">Confirm Password</label>
+            <input type="password" id="signup-confirm-password" required>
+          </div>
+          <button type="submit" class="btn-primary">Sign Up</button>
+          <div class="divider">
+            <span>or</span>
+          </div>
+          <div id="g_id_onload"
+               data-client_id="253632040873-cp48it6euj8lf6jv7vv1p49r5j40dvh0.apps.googleusercontent.com"
+               data-context="signup"
+               data-ux_mode="popup"
+               data-auto_prompt="false"
+               data-callback="handleGoogleSignup">
+          </div>
+          <div class="g_id_signin"
+               data-type="standard"
+               data-shape="rectangular"
+               data-theme="outline"
+               data-text="signup_with"
+               data-size="large"
+               data-logo_alignment="left">
+          </div>
+        </form>
+      </div>
+      
+      <div id="error-message" class="error-message"></div>
+    </div>
+  </div>
+  
+  <script src="auth.js"></script>
+</body>
+</html>
+
