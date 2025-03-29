@@ -14,7 +14,7 @@ Tresor AI is a fast, free, secure, and privacy-focused AI chatbot. Unlike tradit
 ---
 
 ## 📅 Demo
-Try it live at: _[your deployment URL here]_  
+Try it live at: _[link]_  
 > Note: Your data never leaves your browser, everything happens locally. The only exception is when you upload a file via Ragie's Google Drive Connector and that data is processed by Ragie and Google Drive. 
 
 ---
