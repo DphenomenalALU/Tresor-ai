@@ -1,6 +1,0 @@
-// Assuming the title generation is in a function called generateChatTitle
-function generateChatTitle() {
-    // Remove the API call to generate the title
-    // const title = await fetch('api/generate-title'); // This line should be removed
-    // ...
-} 
