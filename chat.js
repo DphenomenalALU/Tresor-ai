@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   uploadBtn.addEventListener("click", async () => {
     try {
       // Initialize Ragie Connect
-      const response = await fetch('/api/ragie/init', {
+      const response = await fetch('https://tresor-backend-0sew.onrender.com/ragie/init', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -407,7 +407,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }));
 
       // Make API call to chat endpoint with selected model
-      const response = await fetch('/api/chat', {
+      const response = await fetch('https://tresor-backend-0sew.onrender.com/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
