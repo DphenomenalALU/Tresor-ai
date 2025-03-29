@@ -26,5 +26,46 @@ We gratefully use the following APIs and services:
 - **[Ragie](https://ragie.ai)** — To securely connect and retrieve Google Drive files for RAG
 - **[Google Identity Services](https://developers.google.com/identity)** — For secure OAuth login
 
-If you found this helpful, give it a star ⭐ and share with friends who care about privacy. 
+If you found this helpful, give it a star ⭐ and share it with friends who care about privacy. 
+
+---
+
+## 📚 Challenges & How I Overcame Them
+
+### Challenge 1: Separating the front-end and back-end
+
+Initially, the project was a monolith. I needed to separate the client and server logic to deploy securely and scale efficiently. This required:
+
+- Refactoring fetch URLs to use full API base paths
+- Setting up proper CORS handling
+- Ensuring static assets were served separately
+
+**Solution:** Used Render for the back-end and my web servers for the front-end. Rewrote API endpoints and used environment variables to manage base URLs.
+
+---
+
+### Challenge 2: Streaming responses from Groq
+
+Groq's API supports SSE (Server-Sent Events), but integrating it with the front-end while keeping UI responsive was tricky.
+
+**Solution:** Leveraged the `TextDecoder` API and `ReadableStream` to handle incoming chunks of data and update the UI incrementally.
+
+---
+
+### Challenge 3: Securely handling Google OAuth
+
+OAuth flows often break if redirect URIs or environment variables are misconfigured.
+
+**Solution:** I carefully matched redirect URIs in the Google Cloud Console with `APP_URL` on Render. I also used `google-auth-library` for token verification.
+
+---
+
+### Challenge 4: Local data persistence
+
+Since I promised privacy, everything had to be stored locally. Managing user state, threads, and message history with `localStorage` while keeping things fast and clean was challenging.
+
+**Solution:** Implemented a lightweight state management pattern and added autosave logic. Added UI features like favorites and filters without needing a database.
+
+
+
 
