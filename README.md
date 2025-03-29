@@ -10,6 +10,7 @@ Tresor AI is a fast, free, secure, and privacy-focused AI chatbot. Unlike tradit
 - 🛅 Chat history and favorite messages stored locally in your browser.
 - 🔒 Google OAuth login for secure sign-in.
 - 📂 Connect your files via Ragie's Google Drive Connector to enable Retrieval-Augmented Generation (RAG).
+- 🔍 Easily search for messages and save AI responses or prompts you love. 
 
 ---
 
