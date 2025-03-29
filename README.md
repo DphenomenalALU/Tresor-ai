@@ -73,6 +73,38 @@ npx serve .
 ```
 Then visit: http://localhost:3000
 
+## 🚀 Deploying the Front-end on the School's Server 
+
+To host the frontend on the school-assigned web servers. Use NGINX for serving static assets and HAProxy for load balancing. Here’s a quick breakdown:
+
+### Web Servers Setup
+Tresor's front-end is deployed on two web servers (web-01 and web-02) running NGINX. The files are located in:
+
+```
+/var/www/tresor
+```
+
+Below is the configuration snippet implemented to handle incoming traffic:
+
+```
+server {
+    listen 80;
+    server_name dphenomenal.tech www.dphenomenal.tech;
+
+    # Headers for tracking the server instance
+    add_header X-Served-By 6490-web-01;
+    error_page 404 /404.html;
+
+    location / {
+        root /var/www/tresor;
+        try_files $uri $uri/ =404;
+    }
+}
+```
+
+### Load Balancer Configuration
+Our load balancer (lb-01) is powered by HAProxy, which sits in front of web-01 and web-02. HAProxy dynamically routes incoming requests based on server health, ensuring high availability and even load distribution. This setup minimizes downtime and keeps performance on point.
+
 ### Make sure all API calls point to:
 
 ```js
