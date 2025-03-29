@@ -61,150 +61,354 @@ document.addEventListener("DOMContentLoaded", () => {
     window.history.replaceState({}, document.title, '/chat.html');
   }
 
-  // DOM elements
-  const messagesContainer = document.getElementById("messages-container")
-  const messageInput = document.getElementById("message-input")
-  const sendButton = document.getElementById("send-button")
-  const newChatButton = document.getElementById("new-chat")
-  const logoutButton = document.getElementById("logout")
+  // Initialize UI elements
+  const messagesContainer = document.getElementById('messages-container');
+  const messageInput = document.getElementById('message-input');
+  const sendButton = document.getElementById('send-button');
+  const searchInput = document.getElementById('search-input');
+  const filterTags = document.querySelectorAll('.filter-tag');
+  const sortBtn = document.getElementById('sort-btn');
+  const newChatBtn = document.getElementById('new-chat');
+  const logoutBtn = document.getElementById('logout');
+  const chatThreadsContainer = document.getElementById('chat-threads');
 
+  // State management
+  let threads = [];
+  let currentThreadId = null;
+  let messages = [];
+  let currentFilter = 'all';
+  let sortDirection = 'desc'; // desc = newest first
+  
   // State
   let conversationContext = []
   let isProcessing = false
 
-  // Handle input changes to toggle send button state
-  messageInput.addEventListener("input", () => {
-    sendButton.disabled = !messageInput.value.trim()
-  })
-
-  // Add message to UI
-  function addMessageToUI(text, sender = 'user', loading = false) {
-    const messageElement = document.createElement("div")
-    messageElement.classList.add("message")
-    messageElement.classList.add(sender === "user" ? "user-message" : "ai-message")
-
-    if (loading) {
-      messageElement.innerHTML = '<div class="loading-dots"><div></div><div></div><div></div></div>'
+  // Load threads from storage
+  function loadThreads() {
+    const savedThreads = localStorage.getItem(`chat_threads_${currentUser.id}`);
+    threads = savedThreads ? JSON.parse(savedThreads) : [];
+    
+    if (threads.length === 0) {
+      // Create initial thread
+      createNewThread();
     } else {
-      messageElement.innerHTML = `
-        <div class="message-content">
-          <div class="message-text">${text}</div>
-        </div>
-      `
+      // Load last active thread
+      const lastActiveThread = threads.find(t => t.isActive) || threads[0];
+      loadThread(lastActiveThread.id);
     }
-
-    messagesContainer.appendChild(messageElement)
-    messagesContainer.scrollTop = messagesContainer.scrollHeight
-    return messageElement
+    
+    renderThreads();
   }
 
-  // Send message function
-  async function sendMessage() {
-    if (isProcessing) return
+  // Save threads to storage
+  function saveThreads() {
+    localStorage.setItem(`chat_threads_${currentUser.id}`, JSON.stringify(threads));
+  }
 
-    const messageText = messageInput.value.trim()
-    if (!messageText) return
+  // Create a new thread
+  function createNewThread() {
+    const thread = {
+      id: Date.now(),
+      title: "New Chat",  // We'll update this after first message
+      preview: "Start a new conversation",
+      timestamp: new Date(),
+      isActive: true,
+      isNew: true  // Flag to track if this is a new thread
+    };
 
-    // Add user message to UI
-    addMessageToUI(messageText)
-    conversationContext.push({ sender: 'user', text: messageText })
+    // Deactivate other threads
+    threads.forEach(t => t.isActive = false);
+    
+    threads.unshift(thread);
+    currentThreadId = thread.id;
+    messages = [];
+    
+    saveThreads();
+    saveMessages();
+    renderThreads();
+    renderMessages();
+    
+    // Add initial AI message
+    addMessage("Hello! I'm your AI assistant. How can I help you today?", true);
+  }
 
-    // Clear input and disable send button
-    messageInput.value = ""
-    sendButton.disabled = true
-    isProcessing = true
+  // Load a specific thread
+  function loadThread(threadId) {
+    threads.forEach(t => t.isActive = t.id === threadId);
+    currentThreadId = threadId;
+    
+    // Load messages for this thread
+    const savedMessages = localStorage.getItem(`chat_messages_${currentUser.id}_${threadId}`);
+    if (savedMessages) {
+      messages = JSON.parse(savedMessages);
+      messages.forEach(m => m.timestamp = new Date(m.timestamp));
+    } else {
+      messages = [];
+    }
+    
+    saveThreads();
+    renderMessages();
+  }
 
-    // Add loading message
-    const loadingMessage = addMessageToUI('', 'ai', true)
+  // Render thread list
+  function renderThreads() {
+    chatThreadsContainer.innerHTML = '';
+    
+    threads.forEach(thread => {
+      const threadElement = document.createElement('div');
+      threadElement.className = `thread-item ${thread.isActive ? 'active' : ''}`;
+      threadElement.innerHTML = `
+        <i class="fas fa-comments thread-icon"></i>
+        <div class="thread-content">
+          <div class="thread-title">${thread.title}</div>
+          <div class="thread-preview">${thread.preview}</div>
+        </div>
+        <div class="thread-date">${formatDate(thread.timestamp)}</div>
+      `;
+      
+      threadElement.addEventListener('click', () => loadThread(thread.id));
+      chatThreadsContainer.appendChild(threadElement);
+    });
+  }
 
+  // Update thread preview
+  function updateThreadPreview(content) {
+    const thread = threads.find(t => t.id === currentThreadId);
+    if (thread) {
+      thread.preview = content.substring(0, 50) + (content.length > 50 ? '...' : '');
+      thread.timestamp = new Date();
+      saveThreads();
+      renderThreads();
+    }
+  }
+
+  // Generate thread title from content
+  async function generateThreadTitle(content) {
     try {
-      // Send message to AI
-      const response = await fetch('/api/chat', {
+      // Call your AI API to generate a title
+      const response = await fetch('/api/generate-title', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: messageText,
-          context: conversationContext
-        })
-      })
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content })
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to get AI response')
+        throw new Error('Failed to generate title');
       }
 
-      // Handle streaming response
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let aiResponse = ''
-
-      while (true) {
-        const { value, done } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(5))
-              aiResponse += data.content
-              loadingMessage.innerHTML = `
-                <div class="message-content">
-                  <div class="message-text">${aiResponse}</div>
-                </div>
-              `
-              messagesContainer.scrollTop = messagesContainer.scrollHeight
-            } catch (e) {
-              console.error('Error parsing SSE data:', e)
-            }
-          }
-        }
+      // For now, we'll create a simple title from the content
+      // This is a fallback until the API is implemented
+      let title = content.split(' ').slice(0, 4).join(' ');
+      if (content.length > 25) {
+        title = content.substring(0, 25) + '...';
       }
-
-      // Add AI response to context
-      conversationContext.push({ sender: 'ai', text: aiResponse })
-
+      return title;
     } catch (error) {
-      console.error('Error:', error)
-      loadingMessage.innerHTML = `
-        <div class="message-content">
-          <div class="message-text error">Sorry, I encountered an error. Please try again.</div>
-        </div>
-      `
-    } finally {
-      isProcessing = false
+      console.error('Error generating title:', error);
+      return `Chat ${threads.length}`;
     }
   }
 
-  // Event listeners
-  sendButton.addEventListener("click", sendMessage)
+  // Message handling functions
+  function addMessage(content, isAI = false) {
+    const message = {
+      id: Date.now(),
+      content,
+      isAI,
+      timestamp: new Date(),
+      favorite: false,
+      tags: [isAI ? 'AI' : 'User']
+    };
 
-  messageInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter" && !e.shiftKey && !sendButton.disabled) {
-      e.preventDefault()
-      sendMessage()
+    // Auto-tag messages
+    if (content.includes('?')) {
+      message.tags.push('questions');
     }
-  })
+    if (content.includes('```') || content.match(/[<>{}()]/)) {
+      message.tags.push('code');
+    }
 
-  newChatButton.addEventListener("click", () => {
-    // Clear conversation context
-    conversationContext = []
+    messages.push(message);
+    updateThreadPreview(content);
 
-    // Clear UI
-    messagesContainer.innerHTML = ""
+    // If this is the first user message in a new thread, generate a title
+    const thread = threads.find(t => t.id === currentThreadId);
+    if (!isAI && thread && thread.isNew && messages.filter(m => !m.isAI).length === 1) {
+      generateThreadTitle(content).then(title => {
+        thread.title = title;
+        thread.isNew = false;
+        saveThreads();
+        renderThreads();
+      });
+    }
 
-    // Add welcome message
-    addMessageToUI("Hello! I'm your AI assistant. How can I help you today?", "ai")
-  })
+    renderMessages();
+    saveMessages();
+  }
 
-  logoutButton.addEventListener("click", () => {
-    // Remove current user from localStorage
-    localStorage.removeItem("currentUser")
+  function createMessageElement(message) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${message.isAI ? 'ai-message' : 'user-message'}`;
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.textContent = message.content;
+    
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'message-actions';
+    
+    // Add tags
+    message.tags.forEach(tag => {
+      const tagSpan = document.createElement('span');
+      tagSpan.className = 'message-tag';
+      tagSpan.textContent = tag;
+      actionsDiv.appendChild(tagSpan);
+    });
+    
+    // Add favorite button
+    const favoriteBtn = document.createElement('button');
+    favoriteBtn.className = `favorite-btn ${message.favorite ? 'active' : ''}`;
+    favoriteBtn.innerHTML = `<i class="fa${message.favorite ? 's' : 'r'} fa-star"></i>`;
+    favoriteBtn.addEventListener('click', () => toggleFavorite(message.id));
+    actionsDiv.appendChild(favoriteBtn);
+    
+    messageDiv.appendChild(contentDiv);
+    messageDiv.appendChild(actionsDiv);
+    return messageDiv;
+  }
 
-    // Redirect to login page
-    window.location.href = "index.html"
-  })
+  function renderMessages() {
+    messagesContainer.innerHTML = '';
+    
+    // Filter messages
+    let filteredMessages = messages.filter(message => {
+      if (currentFilter === 'all') return true;
+      if (currentFilter === 'favorites') return message.favorite;
+      return message.tags.includes(currentFilter);
+    });
+    
+    // Sort messages
+    filteredMessages.sort((a, b) => {
+      return sortDirection === 'desc' 
+        ? b.timestamp - a.timestamp 
+        : a.timestamp - b.timestamp;
+    });
+    
+    // Apply search filter if search input has value
+    const searchTerm = searchInput.value.toLowerCase();
+    if (searchTerm) {
+      filteredMessages = filteredMessages.filter(message =>
+        message.content.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    filteredMessages.forEach(message => {
+      messagesContainer.appendChild(createMessageElement(message));
+    });
+    
+    // Scroll to bottom if not searching/filtering
+    if (!searchTerm && currentFilter === 'all') {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  }
+
+  // Event Listeners
+  messageInput.addEventListener('input', () => {
+    sendButton.disabled = !messageInput.value.trim();
+  });
+
+  messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && messageInput.value.trim()) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  sendButton.addEventListener('click', sendMessage);
+
+  searchInput.addEventListener('input', debounce(() => {
+    renderMessages();
+  }, 300));
+
+  filterTags.forEach(tag => {
+    tag.addEventListener('click', () => {
+      filterTags.forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      currentFilter = tag.dataset.tag;
+      renderMessages();
+    });
+  });
+
+  sortBtn.addEventListener('click', () => {
+    sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+    sortBtn.querySelector('span').textContent = `Sort by Date (${sortDirection === 'desc' ? 'Newest' : 'Oldest'})`;
+    renderMessages();
+  });
+
+  function sendMessage() {
+    const content = messageInput.value.trim();
+    if (!content) return;
+
+    addMessage(content, false);
+    messageInput.value = '';
+    sendButton.disabled = true;
+
+    // Simulate AI response (replace with actual API call)
+    setTimeout(() => {
+      addMessage('This is a simulated AI response.', true);
+    }, 1000);
+  }
+
+  function toggleFavorite(messageId) {
+    const message = messages.find(m => m.id === messageId);
+    if (message) {
+      message.favorite = !message.favorite;
+      renderMessages();
+      saveMessages();
+    }
+  }
+
+  // Storage functions
+  function saveMessages() {
+    localStorage.setItem(`chat_messages_${currentUser.id}_${currentThreadId}`, JSON.stringify(messages));
+  }
+
+  function loadMessages() {
+    const savedMessages = localStorage.getItem(`chat_messages_${currentUser.id}_${currentThreadId}`);
+    if (savedMessages) {
+      messages = JSON.parse(savedMessages);
+      messages.forEach(m => m.timestamp = new Date(m.timestamp));
+      renderMessages();
+    }
+  }
+
+  // Utility functions
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  // Initialize
+  loadThreads();
+  filterTags[0].classList.add('active'); // Activate 'All' filter by default
+  
+  // Handle logout
+  logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('currentUser');
+    window.location.href = 'index.html';
+  });
+
+  // Handle new chat
+  newChatBtn.addEventListener('click', createNewThread);
 })
 
 // Show notification
@@ -218,5 +422,17 @@ function showNotification(message) {
     notification.classList.add('fade-out')
     setTimeout(() => notification.remove(), 500)
   }, 3000)
+}
+
+// Format date for thread list
+function formatDate(date) {
+  const now = new Date();
+  const messageDate = new Date(date);
+  
+  if (messageDate.toDateString() === now.toDateString()) {
+    return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } else {
+    return messageDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
 }
 
