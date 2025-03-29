@@ -29,7 +29,7 @@ We gratefully use the following APIs and services:
 ---
 
 ## 🙏 Credits
-Built with care by D'phenomenal.
+Built by D'phenomenal.
 
 If you found this helpful, give it a star ⭐ and share with friends who care about privacy. 
 
