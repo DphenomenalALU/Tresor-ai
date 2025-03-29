@@ -26,10 +26,10 @@ app.use(express.static('.')); // Serve static files from current directory
 
 // Chat completion endpoint
 app.post('/api/chat', async (req, res) => {
-  const { message, context } = req.body;
+  const { message, context, model } = req.body;
 
   try {
-    console.log('Received chat request:', { message, context });
+    console.log('Received chat request:', { message, context, model });
     
     // Format the conversation context
     const messages = [
@@ -49,21 +49,21 @@ app.post('/api/chat', async (req, res) => {
 
     console.log('Formatted messages:', JSON.stringify(messages, null, 2));
 
+    // Set up SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
     // Stream the response
     const chatCompletion = await groq.chat.completions.create({
       messages,
-      model: "llama-3.3-70b-versatile",
+      model: model || "llama-3.3-70b-versatile",
       temperature: 0.6,
       max_tokens: 2048,
       top_p: 0.95,
       stream: true,
       stop: null
     });
-
-    // Set up SSE headers
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
 
     // Stream the response chunks
     for await (const chunk of chatCompletion) {
@@ -80,7 +80,10 @@ app.post('/api/chat', async (req, res) => {
       stack: error.stack,
       response: error.response?.data
     });
-    res.status(500).json({ error: 'Failed to generate response', details: error.message });
+    
+    // Send error response
+    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+    res.end();
   }
 });
 

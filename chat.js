@@ -67,21 +67,51 @@ document.addEventListener("DOMContentLoaded", () => {
   const sendButton = document.getElementById('send-button');
   const searchInput = document.getElementById('search-input');
   const filterTags = document.querySelectorAll('.filter-tag');
-  const sortBtn = document.getElementById('sort-btn');
   const newChatBtn = document.getElementById('new-chat');
   const logoutBtn = document.getElementById('logout');
   const chatThreadsContainer = document.getElementById('chat-threads');
+  const modelSelector = document.getElementById('model-selector');
 
   // State management
   let threads = [];
   let currentThreadId = null;
   let messages = [];
   let currentFilter = 'all';
-  let sortDirection = 'desc'; // desc = newest first
+  let currentModel = 'llama-3.3-70b-versatile'; // Default model
   
   // State
   let conversationContext = []
   let isProcessing = false
+
+  // Available models
+  const availableModels = [
+    { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B' },
+    { id: 'llama-3.3-70b-specdec', name: 'Llama 3.3 70B SpecDec' },
+    { id: 'mistral-saba-24b', name: 'Mistral Saba 24B' },
+    { id: 'qwen-2.5-32b', name: 'Qwen 2.5 32B' },
+    { id: 'qwen-qwq-32b', name: 'Qwen QWQ 32B' },
+    { id: 'deepseek-r1-distill-qwen-32b', name: 'DeepSeek Qwen 32B' }
+  ];
+
+  // Initialize model selector
+  function initializeModelSelector() {
+    availableModels.forEach(model => {
+      const option = document.createElement('option');
+      option.value = model.id;
+      option.textContent = model.name;
+      if (model.id === currentModel) {
+        option.selected = true;
+      }
+      modelSelector.appendChild(option);
+    });
+
+    // Load saved model preference
+    const savedModel = localStorage.getItem(`selected_model_${currentUser.id}`);
+    if (savedModel && availableModels.some(m => m.id === savedModel)) {
+      currentModel = savedModel;
+      modelSelector.value = savedModel;
+    }
+  }
 
   // Load threads from storage
   function loadThreads() {
@@ -134,6 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load a specific thread
   function loadThread(threadId) {
+    // Update active state for all threads
     threads.forEach(t => t.isActive = t.id === threadId);
     currentThreadId = threadId;
     
@@ -147,6 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     saveThreads();
+    renderThreads(); // Re-render threads to update active state
     renderMessages();
   }
 
@@ -164,11 +196,51 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="thread-preview">${thread.preview}</div>
         </div>
         <div class="thread-date">${formatDate(thread.timestamp)}</div>
+        <button class="delete-thread-btn" title="Delete thread">
+          <i class="fas fa-trash"></i>
+        </button>
       `;
       
-      threadElement.addEventListener('click', () => loadThread(thread.id));
+      // Add click handler for thread selection
+      threadElement.addEventListener('click', (e) => {
+        // Don't trigger if clicking delete button
+        if (!e.target.closest('.delete-thread-btn')) {
+          loadThread(thread.id);
+        }
+      });
+
+      // Add delete handler
+      const deleteBtn = threadElement.querySelector('.delete-thread-btn');
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent thread selection
+        deleteThread(thread.id);
+      });
+      
       chatThreadsContainer.appendChild(threadElement);
     });
+  }
+
+  function deleteThread(threadId) {
+    if (confirm('Are you sure you want to delete this chat thread? This action cannot be undone.')) {
+      // Remove thread from array
+      threads = threads.filter(t => t.id !== threadId);
+      
+      // If deleted thread was active, select another thread
+      if (currentThreadId === threadId) {
+        if (threads.length > 0) {
+          loadThread(threads[0].id);
+        } else {
+          createNewThread();
+        }
+      }
+      
+      // Remove messages from localStorage
+      localStorage.removeItem(`chat_messages_${currentUser.id}_${threadId}`);
+      
+      // Save updated threads
+      saveThreads();
+      renderThreads();
+    }
   }
 
   // Update thread preview
@@ -184,31 +256,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Generate thread title from content
   async function generateThreadTitle(content) {
-    try {
-      // Call your AI API to generate a title
-      const response = await fetch('/api/generate-title', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ content })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate title');
-      }
-
-      // For now, we'll create a simple title from the content
-      // This is a fallback until the API is implemented
-      let title = content.split(' ').slice(0, 4).join(' ');
-      if (content.length > 25) {
-        title = content.substring(0, 25) + '...';
-      }
-      return title;
-    } catch (error) {
-      console.error('Error generating title:', error);
-      return `Chat ${threads.length}`;
+    // Simple title generation from the content
+    let title = content.split(' ').slice(0, 4).join(' ');
+    if (content.length > 25) {
+      title = content.substring(0, 25) + '...';
     }
+    return title;
   }
 
   // Message handling functions
@@ -259,15 +312,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'message-actions';
     
-    // Add tags
-    message.tags.forEach(tag => {
-      const tagSpan = document.createElement('span');
-      tagSpan.className = 'message-tag';
-      tagSpan.textContent = tag;
-      actionsDiv.appendChild(tagSpan);
-    });
-    
-    // Add favorite button
+    // Add favorite button (hidden by default)
     const favoriteBtn = document.createElement('button');
     favoriteBtn.className = `favorite-btn ${message.favorite ? 'active' : ''}`;
     favoriteBtn.innerHTML = `<i class="fa${message.favorite ? 's' : 'r'} fa-star"></i>`;
@@ -289,24 +334,30 @@ document.addEventListener("DOMContentLoaded", () => {
       return message.tags.includes(currentFilter);
     });
     
-    // Sort messages
-    filteredMessages.sort((a, b) => {
-      return sortDirection === 'desc' 
-        ? b.timestamp - a.timestamp 
-        : a.timestamp - b.timestamp;
-    });
-    
     // Apply search filter if search input has value
-    const searchTerm = searchInput.value.toLowerCase();
+    const searchTerm = searchInput.value.toLowerCase().trim();
     if (searchTerm) {
       filteredMessages = filteredMessages.filter(message =>
         message.content.toLowerCase().includes(searchTerm)
       );
+      
+      // Highlight search term in messages
+      filteredMessages.forEach(message => {
+        const messageElement = createMessageElement(message);
+        const contentElement = messageElement.querySelector('.message-content');
+        const text = contentElement.textContent;
+        const highlightedText = text.replace(
+          new RegExp(searchTerm, 'gi'),
+          match => `<mark>${match}</mark>`
+        );
+        contentElement.innerHTML = highlightedText;
+        messagesContainer.appendChild(messageElement);
+      });
+    } else {
+      filteredMessages.forEach(message => {
+        messagesContainer.appendChild(createMessageElement(message));
+      });
     }
-    
-    filteredMessages.forEach(message => {
-      messagesContainer.appendChild(createMessageElement(message));
-    });
     
     // Scroll to bottom if not searching/filtering
     if (!searchTerm && currentFilter === 'all') {
@@ -341,13 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  sortBtn.addEventListener('click', () => {
-    sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
-    sortBtn.querySelector('span').textContent = `Sort by Date (${sortDirection === 'desc' ? 'Newest' : 'Oldest'})`;
-    renderMessages();
-  });
-
-  function sendMessage() {
+  async function sendMessage() {
     const content = messageInput.value.trim();
     if (!content) return;
 
@@ -355,10 +400,74 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.value = '';
     sendButton.disabled = true;
 
-    // Simulate AI response (replace with actual API call)
-    setTimeout(() => {
-      addMessage('This is a simulated AI response.', true);
-    }, 1000);
+    try {
+      // Prepare the context from previous messages
+      const context = messages.map(msg => ({
+        sender: msg.isAI ? 'assistant' : 'user',
+        text: msg.content
+      }));
+
+      // Make API call to chat endpoint with selected model
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: content,
+          context: context,
+          model: currentModel
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from AI');
+      }
+
+      // Create a temporary message element for streaming
+      const tempMessage = {
+        id: Date.now(),
+        content: '',
+        isAI: true,
+        timestamp: new Date(),
+        favorite: false,
+        tags: [] // Remove default tags
+      };
+      messages.push(tempMessage);
+      const messageElement = createMessageElement(tempMessage);
+      messagesContainer.appendChild(messageElement);
+
+      // Handle streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aiResponse = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
+            aiResponse += data.content;
+            messageElement.querySelector('.message-content').textContent = aiResponse;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }
+        }
+      }
+
+      // Update the temporary message with final content
+      tempMessage.content = aiResponse;
+      saveMessages();
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      addMessage('Sorry, I encountered an error. Please try again.', true);
+    } finally {
+      sendButton.disabled = false;
+    }
   }
 
   function toggleFavorite(messageId) {
@@ -400,6 +509,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize
   loadThreads();
   filterTags[0].classList.add('active'); // Activate 'All' filter by default
+  initializeModelSelector(); // Initialize model selector
   
   // Handle logout
   logoutBtn.addEventListener('click', () => {
@@ -408,7 +518,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Handle new chat
-  newChatBtn.addEventListener('click', createNewThread);
+  newChatBtn.addEventListener('click', () => {
+    createNewThread();
+  });
 })
 
 // Show notification
