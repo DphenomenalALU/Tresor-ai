@@ -109,8 +109,6 @@ app.post('/auth/google', async (req, res) => {
       isGoogleUser: true
     };
 
-    // In a real application, you would store this in a database
-    // For now, we'll send it back to be stored in localStorage
     res.json({ user });
   } catch (error) {
     console.error('Google authentication error:', error);
@@ -153,7 +151,6 @@ app.get('/ragie-callback', async (req, res) => {
   }
 
   if (connection_id) {
-    // Store the connection_id in your database if needed
     console.log('Ragie connection successful:', connection_id);
     res.redirect(`/chat.html?connection_success=true`);
   } else {

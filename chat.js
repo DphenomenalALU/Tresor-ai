@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return
   }
 
-  // Set user information
   document.getElementById("user-name").textContent = currentUser.name
   
   // Handle avatar display
@@ -139,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function createNewThread() {
     const thread = {
       id: Date.now(),
-      title: "New Chat",  // We'll update this after first message
+      title: "New Chat",  
       preview: "Start a new conversation",
       timestamp: new Date(),
       isActive: true,
@@ -158,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderThreads();
     renderMessages();
     
-    // Add initial AI message
+    // initial AI message
     addMessage("Hello! I'm your AI assistant. How can I help you today?", true);
   }
 
