@@ -19,17 +19,12 @@ Try it live at: _[link]_
 
 ---
 
-## 💼 API Attribution
+## 💼 API Credits
 We gratefully use the following APIs and services:
 
 - **[Groq](https://groq.com/)** — For blazing-fast LLM inference
 - **[Ragie](https://ragie.ai)** — To securely connect and retrieve Google Drive files for RAG
 - **[Google Identity Services](https://developers.google.com/identity)** — For secure OAuth login
-
----
-
-## 🙏 Credits
-Built by D'phenomenal.
 
 If you found this helpful, give it a star ⭐ and share with friends who care about privacy. 
 
