@@ -16,10 +16,40 @@
         </div>
         <h3 id="user-name">User</h3>
       </div>
-      <div class="sidebar-menu">
-        <button id="new-chat" class="sidebar-btn">
-          <span class="icon">+</span> New Chat
+
+      <!-- Chat Threads Section -->
+      <div class="threads-container">
+        <div class="threads-header">
+          <h4>Chat History</h4>
+          <button id="new-chat" class="new-chat-btn">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+        <div id="chat-threads" class="chat-threads">
+          <!-- Chat threads will be inserted here -->
+        </div>
+      </div>
+
+      <!-- Search and Filter Section -->
+      <div class="search-container">
+        <input type="text" class="search-input" placeholder="Search messages..." id="search-input">
+        <div class="filter-container">
+          <span class="filter-tag" data-tag="all">All</span>
+          <span class="filter-tag" data-tag="favorites">Favorites</span>
+          <span class="filter-tag" data-tag="questions">Questions</span>
+          <span class="filter-tag" data-tag="code">Code</span>
+        </div>
+      </div>
+
+      <!-- Sort Section -->
+      <div class="sort-container">
+        <button class="sort-btn" id="sort-btn">
+          <i class="fas fa-sort"></i>
+          <span>Sort by Date</span>
         </button>
+      </div>
+
+      <div class="sidebar-menu">
         <button id="logout" class="sidebar-btn">
           <span class="icon">←</span> Logout
         </button>
@@ -35,6 +65,12 @@
         <div class="message ai-message">
           <div class="message-content">
             Hello! I'm your AI assistant. How can I help you today?
+          </div>
+          <div class="message-actions">
+            <span class="message-tag">AI</span>
+            <button class="favorite-btn" title="Add to favorites">
+              <i class="far fa-star"></i>
+            </button>
           </div>
         </div>
       </div>
