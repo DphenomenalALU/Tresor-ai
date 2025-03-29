@@ -15,7 +15,7 @@ Tresor AI is a fast, free, secure, and privacy-focused AI chatbot. Unlike tradit
 ---
 
 ## 📅 Demo
-Try it live at: _[link]_  
+Try it live at: https://dphenomenal.tech  
 > Note: Your data never leaves your browser, everything happens locally. The only exception is when you upload a file via Ragie's Google Drive Connector, and that data is processed by Ragie and fully encrypted using bank-grade standards. 
 
 ---
@@ -47,7 +47,112 @@ If you found this helpful, give it a star ⭐ and share it with friends who care
 - Frontend deployed on school servers (web-01, web-02, lb-01), NGINX, HAProxy.
   
 ---
+## 🛠️ Getting Started
 
+### 📦 Requirements
+- Node.js v16+
+- Git
+
+### 🔐 Environment Variables
+The backend is already deployed and configured on Render:
+
+```
+APP_URL=https://tresor-backend-0sew.onrender.com
+```
+
+> You do **not** need to run the back-end locally. All API requests are handled by the hosted server.
+
+---
+
+## ⚙️ Local Setup (Front-End Only)
+
+```
+git clone https://github.com/DphenomenalALU/Tresor-ai.git
+cd tresor-ai
+npx serve .
+```
+Then visit: http://localhost:3000
+
+### Make sure all API calls point to:
+
+```js
+const API_BASE = 'https://tresor-backend-0sew.onrender.com';
+```
+Again, your JS files (e.g., auth.js, chat.js) should use the hosted API base. 
+
+Update all `fetch()` calls like this:
+
+```
+fetch(`${API_BASE}/api/chat`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ message, context, model })
+});
+```
+
+---
+
+## 🧪 API Endpoints (served by the hosted backend on Render)
+
+### `POST /api/chat`
+- **Body:**
+  ```json
+  {
+    "message": "Hello",
+    "context": [...],
+    "model": "llama-3.3-70b-versatile"
+  }
+  ```
+- **Returns:** Server-Sent Events (streamed AI response)
+
+---
+
+### `POST /auth/google`
+- **Body:**
+  ```json
+  {
+    "credential": "google-id-token"
+  }
+  ```
+- **Returns:**
+  ```json
+  {
+    "user": {
+      "id": "...",
+      "name": "...",
+      "email": "...",
+      "picture": "...",
+      "isGoogleUser": true
+    }
+  }
+  ```
+
+---
+
+### `POST /api/ragie/init`
+- **Body:**
+  ```json
+  {
+    "userId": "123456"
+  }
+  ```
+- **Returns:**
+  ```json
+  {
+    "url": "https://ragie.ai/..."
+  }
+  ```
+
+---
+
+### `GET /ragie-callback`
+- Handles the redirect from Ragie OAuth. On success, redirects to:
+
+```
+/chat.html?connection_success=true
+```
+
+---
 ## 📚 Challenges & How I Overcame Them
 
 ### Challenge 1: Separating the front-end and back-end
