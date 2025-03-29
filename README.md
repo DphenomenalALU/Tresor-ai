@@ -1,6 +1,6 @@
 # Tresor AI Chat
 
-Tresor AI is a fast, free, secure, and privacy-focused AI chatbot. Unlike traditional AI chat tools, Tresor ensures your conversations and data stay on your device — we don’t track you, and we don't store your data.
+Tresor AI is a fast, free, secure, and privacy-focused AI chatbot. Unlike traditional AI chat tools, Tresor ensures your conversations and data stay on your device — we don’t track you, and we don't store your data (including your email).
 
 ---
 
