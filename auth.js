@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.handleGoogleLogin = async (response) => {
     try {
       // Send the credential to our server
-      const serverResponse = await fetch('/auth/google', {
+      const serverResponse = await fetch('https://tresor-backend-0sew.onrender.com/auth/google', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return
   }
 
-  // Set user information
   document.getElementById("user-name").textContent = currentUser.name
   
   // Handle avatar display
@@ -30,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   uploadBtn.addEventListener("click", async () => {
     try {
       // Initialize Ragie Connect
-      const response = await fetch('/api/ragie/init', {
+      const response = await fetch('https://tresor-backend-0sew.onrender.com/ragie/init', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -139,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function createNewThread() {
     const thread = {
       id: Date.now(),
-      title: "New Chat",  // We'll update this after first message
+      title: "New Chat",  
       preview: "Start a new conversation",
       timestamp: new Date(),
       isActive: true,
@@ -158,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderThreads();
     renderMessages();
     
-    // Add initial AI message
+    // initial AI message
     addMessage("Hello! I'm your AI assistant. How can I help you today?", true);
   }
 
@@ -408,7 +407,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }));
 
       // Make API call to chat endpoint with selected model
-      const response = await fetch('/api/chat', {
+      const response = await fetch('https://tresor-backend-0sew.onrender.com/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
