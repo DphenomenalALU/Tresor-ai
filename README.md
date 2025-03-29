@@ -21,7 +21,7 @@ Try it live at: _[link]_
 ---
 
 ## 💼 API Credits
-We gratefully use the following APIs and services:
+Tresor AI uses the following APIs and services:
 
 - **[Groq](https://groq.com/)** — For blazing-fast LLM inference
 - **[Ragie](https://ragie.ai)** — To securely connect and retrieve Google Drive files for RAG
@@ -29,6 +29,23 @@ We gratefully use the following APIs and services:
 
 If you found this helpful, give it a star ⭐ and share it with friends who care about privacy. 
 
+---
+
+## 🛠 Tech Stack
+**Front-end:** 
+- HTML, CSS, Vanilla JS
+- LocalStorage for session/data management
+
+**Back-end:** 
+- Node.js with Express
+- Groq SDK for LLMs
+- Google OAuth via google-auth-library
+- Ragie's Google Drive Connector API for RAG 
+
+**Deployment:** 
+- Backend hosted on Render
+- Frontend deployed on school servers (web-01, web-02, lb-01), NGINX, HAProxy.
+  
 ---
 
 ## 📚 Challenges & How I Overcame Them
