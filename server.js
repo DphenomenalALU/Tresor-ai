@@ -31,7 +31,6 @@ app.post('/api/chat', async (req, res) => {
   try {
     console.log('Received chat request:', { message, context, model });
     
-    // Format the conversation context
     const messages = [
       {
         role: "system",
